@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>マップメモ（簡易版）</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+</head>
+<body>
+  <!-- トップページ -->
+  <div id="top-page">
+    <h2>あなたが見たいエリアを選択してください</h2>
+    <select id="area-select">
+      <option value="">-- エリアを選択 --</option>
+    </select>
+    <button id="go-btn">Go</button>
+  </div>
+
+  <!-- 地図ページ -->
+  <div id="map-page" class="hidden">
+    <div id="header">
+      <span id="selected-info"></span>
+      <input type="range" id="year-slider" min="1900" max="2100" step="1" value="2000">
+      <span id="year-label">2000</span>
+    </div>
+    <div id="map"></div>
+
+    <!-- ハンバーガーメニュー -->
+    <div class="hamburger">☰</div>
+    <div class="menu hidden">
+      <button id="back-btn">トップに戻る</button>
+      <button id="download-btn">ダウンロード</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
