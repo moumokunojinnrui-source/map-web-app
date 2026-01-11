@@ -1,307 +1,130 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MapMemo</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIk1hcE1lbW8iLAogICJzaG9ydF9uYW1lIjogIk1hcE1lbW8iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiM4QjAwMDAiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3BuZztiYXNlNjQsaVZCQ1J3MEtHZ29BQUFBTlNVaEVVZ0FBQU1BQUFBS0NBWUFBQUJTM2dodmFBQU1XRWxFUVZSNFh1M2RlMVFVOXg3SDhkMEEiLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0=">
-<style>
-  /* --- 基本スタイル --- */
-  body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; }
-  #map { height: 100vh; width: 100%; }
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HYMKDJDV6R"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-  /* --- 説明ページ用のスタイル --- */
-  .info-overlay {
-    position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(250, 250, 250, 0.98);
-    z-index: 2000;
-    overflow-y: auto;
-    display: none; /* 初期状態は非表示 */
-    color: #333;
-  }
-  .info-overlay main {
-    max-width: 800px; margin: 60px auto;
-    padding: 0 20px; line-height: 1.8;
-  }
-  .info-overlay h1 { font-size: 1.8em; border-bottom: 2px solid #ddd; padding-bottom: 0.4em; }
-  .info-overlay h2 { margin-top: 2em; font-size: 1.4em; border-left: 5px solid #5b8def; padding-left: 0.6em; }
-  .info-overlay ul { padding-left: 20px; }
+      gtag('config', 'G-HYMKDJDV6R');
+    </script>
 
-  /* --- ハンバーガーボタン & メニュー --- */
-  .hamburger {
-    position: fixed; bottom: 20px; right: 20px;
-    width: 50px; height: 50px; background: #333;
-    border-radius: 50%; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; cursor: pointer;
-    z-index: 2001;
-  }
-  .hamburger span { width: 26px; height: 3px; background: #fff; margin: 3px 0; transition: 0.3s; }
-  .menu {
-    position: fixed; bottom: 80px; right: 20px;
-    background: white; border: 1px solid #ddd; border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    display: none; flex-direction: column; overflow: hidden;
-    z-index: 2001;
-  }
-  .menu a { padding: 12px 20px; text-decoration: none; color: #333; border-bottom: 1px solid #eee; }
-  .menu a:hover { background: #f5f5f5; }
-  .menu a:last-child { border-bottom: none; }
-  
-  /* --- ポップアップのスタイル --- */
-  .custom-popup .leaflet-popup-content-wrapper { background: #fff; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
-  .custom-popup .leaflet-popup-content { margin: 0; color: #333; padding: 15px; width: auto !important; min-width: 250px; }
-  .custom-popup h3 { margin: 0 0 10px; font-size: 18px; }
-  .custom-popup p { margin: 5px 0; font-size: 14px; }
-  .input-field, .custom-popup select { width: 100%; height: 48px; padding: 0 12px; font-size: 16px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; }
-  .action-buttons button { background: #8B0000; color: white; border: none; width: calc(50% - 5px); height: 48px; cursor: pointer; font-size: 16px; }
-  .action-buttons .cancel-btn { background: #666; float: right; }
-  .share-btn { background: #8B0000; color: white; border: none; width: 100%; height: 48px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-  .share-container { margin-top: 10px; display: none; }
-  .share-container textarea { width: 100%; height: 100px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-  .share-container button { margin-top: 5px; padding: 5px 10px; background: #8B0000; color: white; border: none; cursor: pointer; }
-  .diamond {
-    width: 30px; height: 50px; background: linear-gradient(45deg, #1e90ff, #add8e6);
-    position: relative; cursor: pointer; transition: transform 0.3s ease;
-    clip-path: polygon(50% 0%, 85% 25%, 85% 75%, 50% 100%, 15% 75%, 15% 25%);
-    border: 1px solid rgba(255, 255, 255, 0.5); display: flex;
-    align-items: center; justify-content: center;
-  }
-  .sparkle { animation: sparkle 1.5s infinite; }
-  @keyframes sparkle {
-    0%, 100% { box-shadow: 0 0 12px 6px rgba(30, 144, 255, 0.7); }
-    50% { box-shadow: 0 0 18px 9px rgba(255, 255, 255, 0.9); }
-  }
-  .diamond:hover { transform: scale(1.2); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapMemo - 歴史のアーカイブ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+        .map-wrapper { flex-grow: 1; position: relative; width: 100%; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+    </style>
 </head>
-<body>
-  <div id="map"></div>
+<body class="bg-gray-50 h-full flex flex-col">
 
-  <div class="info-overlay" id="info-overlay">
-    <main id="content"></main>
-  </div>
+<header class="flex-none bg-white shadow-sm p-4 flex justify-between items-center z-20">
+    <div>
+        <h1 class="text-xl font-bold text-slate-800 leading-none">MapMemo</h1>
+        <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">Digital History Archive</p>
+    </div>
 
-  <div class="hamburger" id="hamburger">
-    <span></span>
-    <span></span>
-    <span></span>
-  </div>
+    <div class="flex gap-2" id="mapControls">
+        <button data-type="street"
+            class="map-btn px-4 py-1.5 text-xs rounded-full transition-colors duration-200 font-medium border shadow-sm">
+            店舗名
+        </button>
+        <button data-type="mall"
+            class="map-btn px-4 py-1.5 text-xs rounded-full transition-colors duration-200 font-medium border shadow-sm">
+            モール
+        </button>
+    </div>
+</header>
 
-  <div class="menu" id="menu">
-    <a href="#" onclick="showPage('description')">🗺 説明文</a>
-    <a href="#" onclick="showPage('policy')">🚫 ご利用のお願い</a>
-    <a href="#" onclick="showPage('map')">↩️ 地図に戻る</a>
-  </div>
+<main class="map-wrapper">
+    <iframe id="mapFrame" allowfullscreen allow="geolocation"></iframe>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <a href="https://note.com" target="_blank"
+       class="absolute bottom-6 right-6 z-30 bg-rose-500 text-white p-4 rounded-full shadow-lg hover:bg-rose-600 transition-transform hover:scale-105 flex items-center justify-center group">
+        <span class="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:mr-2 transition-all duration-300 ease-in-out whitespace-nowrap">
+            思い出を語る
+        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+    </a>
+</main>
+
+<footer class="flex-none bg-slate-800 text-white p-4 z-20">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+        <div class="text-xs">
+            <p class="font-bold opacity-80 uppercase tracking-tighter">Current Archive</p>
+            <p id="archiveLabel" class="text-slate-300"></p>
+        </div>
+    </div>
+</footer>
+
 <script>
-  /* --- ここから地図のスクリプト --- */
-
-  const SUPABASE_URL = 'https://prubpguljspcfjrvpqpc.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_6SMcLyOZtpUkp2Ajmc56hg_Hce0XOJn';
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  const map = L.map('map').setView([35.68, 139.76], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-      attribution: '© OpenStreetMap',
-      maxZoom: 22
-  }).addTo(map);
-  const markers = L.markerClusterGroup();
-  const prefectures = ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県', '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'];
-
-  async function loadPins() {
-    markers.clearLayers();
-    const { data, error } = await supabaseClient
-      .from('mapmemo')
-      .select('id, name, area, lat, lng, year');
-    if (error) {
-      console.error('ピン取得エラー:', error.message, error.details);
-      alert('ピンの取得に失敗しました: ' + error.message);
-      return;
+/**
+ * 1. 設定の一元管理 (Constants)
+ */
+const MAP_CONFIG = {
+    street: {
+        // 東京駅を中心に表示するための座標パラメータを追加しました
+        url: "https://umap.openstreetmap.fr/ja/map/mapmemo_alpha_1336908?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=null&tilelayersControl=true&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false#16/35.6812/139.7671",
+        label: "商店街の記憶（1950s - 2020s）"
+    },
+    mall: {
+        url: "https://umap.openstreetmap.fr/ja/map/mapmemo_mall_1337404?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=true&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=true",
+        label: "ショッピングモールの記憶（1970s - 現在）"
     }
-    if (!data || data.length === 0) return;
+};
 
-    const pinGroups = data.reduce((acc, pin) => {
-      const key = `${pin.lat},${pin.lng}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(pin);
-      return acc;
-    }, {});
+const STYLES = {
+    active: ["bg-slate-800", "text-white", "border-slate-800"],
+    inactive: ["bg-white", "text-slate-600", "border-gray-200", "hover:bg-gray-50"]
+};
 
-    Object.values(pinGroups).forEach(pins => {
-      const [lat, lng] = [pins[0].lat, pins[0].lng];
-      const diamondIcon = L.divIcon({
-        html: `<div class="diamond"></div>`,
-        className: 'sparkle',
-        iconSize: [30, 50], iconAnchor: [15, 50], popupAnchor: [0, -50]
-      });
-      const marker = L.marker([lat, lng], { icon: diamondIcon });
-      marker.bindPopup(() => createViewPopup(pins), { className: 'custom-popup' });
-      markers.addLayer(marker);
-    });
-    map.addLayer(markers);
-  }
+/**
+ * 2. 分離と機能の実行 (Logic)
+ */
+const elements = {
+    iframe: document.getElementById("mapFrame"),
+    label: document.getElementById("archiveLabel"),
+    buttons: document.querySelectorAll(".map-btn")
+};
 
-  function createViewPopup(pins) {
-    const container = document.createElement('div');
-    let currentPin = pins[0];
+function updateMapUI(type) {
+    const config = MAP_CONFIG[type];
+    if (!config) return;
 
-    const updateContent = () => {
-      container.innerHTML = `
-        <h3>${currentPin.name}</h3>
-        <p><strong>エリア:</strong> ${currentPin.area}</p>
-        <select id="yearSelect">
-          ${pins.map(p => `<option value="${p.id}" ${p.id === currentPin.id ? 'selected' : ''}>${p.year}年</option>`).join('')}
-        </select>
-        <button class="share-btn">共有</button>
-        <div class="share-container"></div>
-      `;
-    };
+    // iframeとラベルの更新
+    elements.iframe.src = config.url;
+    elements.label.textContent = config.label;
 
-    container.addEventListener('change', e => {
-      if (e.target.id === 'yearSelect') {
-        const selectedId = e.target.value;
-        currentPin = pins.find(p => p.id === selectedId) || pins[0];
-        updateContent();
-      }
-    });
-
-    container.addEventListener('click', e => {
-      if (e.target.classList.contains('share-btn')) {
-        const shareContainer = container.querySelector('.share-container');
-        if (shareContainer.style.display === 'none' || !shareContainer.style.display) {
-          const shareText = `お店の名前: ${currentPin.name}\n西暦: ${currentPin.year}\n緯度: ${currentPin.lat}\n経度: ${currentPin.lng}`;
-          shareContainer.innerHTML = `
-            <p style="font-size:12px; margin-bottom:5px;">以下の情報をコピーしてSNSで共有できます。</p>
-            <textarea readonly>${shareText}</textarea>
-            <button class="copy-btn">コピー</button>
-          `;
-          shareContainer.style.display = 'block';
-          shareContainer.querySelector('.copy-btn').addEventListener('click', () => {
-            const textarea = shareContainer.querySelector('textarea');
-            textarea.select();
-            document.execCommand('copy');
-            alert('情報をコピーしました！SNSで共有してください');
-          });
+    // ボタンの状態更新
+    elements.buttons.forEach(btn => {
+        const isActive = btn.dataset.type === type;
+        if (isActive) {
+            btn.classList.add(...STYLES.active);
+            btn.classList.remove(...STYLES.inactive);
         } else {
-          shareContainer.style.display = 'none';
+            btn.classList.add(...STYLES.inactive);
+            btn.classList.remove(...STYLES.active);
         }
-      }
     });
-    updateContent();
-    return container;
-  }
+}
 
-  map.on('contextmenu', (e) => {
-    const { lat, lng } = e.latlng;
-    const popupContent = `
-      <h3>新しいピンを登録</h3>
-      <input type="text" id="newName" class="input-field" placeholder="店名（必須, 50文字以内）" maxlength="50">
-      <select id="newArea" class="input-field">
-        <option value="">都道府県を選択</option>
-        ${prefectures.map(pref => `<option value="${pref}">${pref}</option>`).join('')}
-      </select>
-      <input type="number" id="newYear" class="input-field" placeholder="西暦（必須, 1900-2025）" min="1900" max="2025">
-      <div class="action-buttons">
-        <button class="save-btn">保存</button>
-        <button class="cancel-btn">キャンセル</button>
-      </div>
-    `;
-    const popup = L.popup({ className: 'custom-popup' }).setLatLng(e.latlng).setContent(popupContent).openOn(map);
-
-    const container = popup.getElement().querySelector('.leaflet-popup-content');
-    container.querySelector('.save-btn').addEventListener('click', async () => {
-      const name = container.querySelector('#newName').value.trim();
-      const area = container.querySelector('#newArea').value;
-      const year = parseInt(container.querySelector('#newYear').value);
-      if (!name || !area || !year || year < 1900 || year > 2025) {
-        alert('店名、都道府県、有効な西暦（1900-2025）を入力してください');
-        return;
-      }
-      const { data: pinData, error: pinError } = await supabaseClient
-        .from('mapmemo')
-        .insert([{ name, area, lat, lng, year }])
-        .select().single();
-      if (pinError) {
-        console.error('ピンの登録エラー:', pinError.message, pinError.details);
-        alert('ピンの登録に失敗しました: ' + pinError.message);
-        return;
-      }
-      map.closePopup();
-      loadPins();
+// 初期化とイベントリスナーの登録
+document.addEventListener("DOMContentLoaded", () => {
+    // ボタンクリック時の挙動
+    elements.buttons.forEach(btn => {
+        btn.addEventListener("click", () => updateMapUI(btn.dataset.type));
     });
-    container.querySelector('.cancel-btn').addEventListener('click', () => map.closePopup());
-  });
 
-  function checkUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    const lat = params.get('lat');
-    const lng = params.get('lng');
-    const zoom = params.get('zoom');
-    if (lat && lng) {
-      map.setView([parseFloat(lat), parseFloat(lng)], zoom ? parseInt(zoom) : 15);
-    }
-  }
-
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    const swCode = `self.addEventListener('install',e=>{e.waitUntil(caches.open('mapmemo-v1').then(c=>c.addAll(['/','https://unpkg.com/leaflet@1.9.4/dist/leaflet.js','https://unpkg.com/leaflet@1.9.4/dist/leaflet.css','https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js','https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css','https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css','https://unpkg.com/@supabase/supabase-js@2'])))})
-self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))})`;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swUrl).catch(err => console.error('Service Worker登録エラー:', err.message));
-  }
-
-  loadPins();
-  checkUrlParams();
-
-  /* --- ここから説明ページのスクリプト --- */
-
-  const hamburger = document.getElementById("hamburger");
-  const menu = document.getElementById("menu");
-  const infoOverlay = document.getElementById("info-overlay");
-  const content = document.getElementById("content");
-
-  hamburger.addEventListener("click", () => {
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
-  });
-
-  const pages = {
-    description: `
-      <h1>🗺 MapMemoとは</h1>
-      <p>私たちが暮らしてきた町には、もう姿を消してしまった喫茶店、商店街の小さな店、映画館やゲームセンターなど、忘れられそうで忘れられない場所がたくさんありました。</p>
-      <p>けれど、その多くは誰にも記録されないまま、静かに消えていきます。</p>
-      <p><strong>MapMemo</strong> は、そうした “もう無いけれど心に残っているお店” を残していくためのアーカイブ地図です。地図を開けば、かつてそこにあったお店を見つけて懐かしむことができます。そして、もしあなたが覚えているお店があれば、店名だけでも構いません。簡単に投稿して記録を残すことができます。</p>
-      <p>誰かが思い出の一部を残し、誰かがそれを見つけて懐かしむ。そんな小さな循環を少しずつ積み重ね、町の記憶を未来へつなげていきたい――それが MapMemo の願いです。</p>
-      <p>どうか、あなたの記憶も 1 件だけでも参加してください。あなたの投稿が、誰かの懐かしさを呼び起こすかもしれません。</p>
-    `,
-    policy: `
-      <h1>🚫 ご利用にあたってのお願い</h1>
-      <p>MapMemo は「町の記憶を未来に残す」ことを目的とした市民アーカイブです。そのため、以下の行為はご遠慮ください。</p>
-      <ul>
-        <li>事実と異なる情報、虚偽の投稿</li>
-        <li>個人や店舗を誹謗・中傷する内容の投稿</li>
-        <li>悪意あるイタズラ投稿や、他人の迷惑となる利用</li>
-      </ul>
-      <p>投稿内容は、すべての人が安心して閲覧できるよう、<strong>公共性・記録性・敬意</strong>を大切にしてください。あなたの思い出が、町の大切な一部として未来へ残ります。</p>
-    `
-  };
-
-  function showPage(page) {
-    if (page === 'map') {
-      infoOverlay.style.display = "none";
-    } else {
-      content.innerHTML = pages[page];
-      infoOverlay.style.display = "block";
-    }
-    menu.style.display = "none";
-  }
-
+    // 初期表示設定 (デフォルト: street)
+    updateMapUI("street");
+});
 </script>
+
 </body>
 </html>
