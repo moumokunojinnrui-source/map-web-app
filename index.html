@@ -1,130 +1,212 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HYMKDJDV6R"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-HYMKDJDV6R');
-    </script>
-
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MapMemo - 歴史のアーカイブ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Pano-Map Ultimate Editor</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
-        .map-wrapper { flex-grow: 1; position: relative; width: 100%; }
-        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        :root { --accent: #28a745; --bg: #1a1a1a; }
+        body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; background: #000; color: white; overflow: hidden; }
+        #map-area { flex: 1; border-right: 2px solid #333; }
+        #pano-area { flex: 1; position: relative; background: #050505; }
+        #ui-panel {
+            position: absolute; top: 15px; right: 15px; z-index: 1000;
+            background: rgba(26, 26, 26, 0.9); padding: 20px; border-radius: 12px; width: 300px;
+            backdrop-filter: blur(10px); border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .info-box { background: #000; padding: 10px; border-radius: 6px; margin: 10px 0; font-family: monospace; font-size: 12px; color: #00d4ff; border: 1px solid #333; }
+        h2 { font-size: 16px; margin: 0 0 15px 0; color: var(--accent); border-bottom: 1px solid #444; padding-bottom: 8px; }
+        label { display: block; font-size: 11px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; margin-bottom: 15px; border-radius: 4px; }
+        button { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover:not(:disabled) { background: #218838; transform: translateY(-1px); }
+        button:disabled { background: #444; cursor: not-allowed; opacity: 0.5; }
+        #status-msg { font-size: 11px; margin-top: 10px; color: #ffc107; }
     </style>
 </head>
-<body class="bg-gray-50 h-full flex flex-col">
+<body>
 
-<header class="flex-none bg-white shadow-sm p-4 flex justify-between items-center z-20">
-    <div>
-        <h1 class="text-xl font-bold text-slate-800 leading-none">MapMemo</h1>
-        <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">Digital History Archive</p>
+<div id="map-area"></div>
+<div id="pano-area">
+    <div id="ui-panel">
+        <h2>Pano-Map Creator</h2>
+        
+        <label>1. パノラマ画像を選択</label>
+        <input type="file" id="inp-img" accept="image/*">
+
+        <label>2. 地図で場所を指定</label>
+        <div id="disp-pos" class="info-box">地図をクリックしてください</div>
+
+        <label>3. タイトル</label>
+        <input type="text" id="inp-title" placeholder="例：〇〇ビル 屋上展望台">
+
+        <button id="btn-export" disabled>最終HTMLを保存</button>
+        <div id="status-msg"></div>
     </div>
+</div>
 
-    <div class="flex gap-2" id="mapControls">
-        <button data-type="street"
-            class="map-btn px-4 py-1.5 text-xs rounded-full transition-colors duration-200 font-medium border shadow-sm">
-            店舗名
-        </button>
-        <button data-type="mall"
-            class="map-btn px-4 py-1.5 text-xs rounded-full transition-colors duration-200 font-medium border shadow-sm">
-            モール
-        </button>
-    </div>
-</header>
-
-<main class="map-wrapper">
-    <iframe id="mapFrame" allowfullscreen allow="geolocation"></iframe>
-
-    <a href="https://note.com" target="_blank"
-       class="absolute bottom-6 right-6 z-30 bg-rose-500 text-white p-4 rounded-full shadow-lg hover:bg-rose-600 transition-transform hover:scale-105 flex items-center justify-center group">
-        <span class="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:mr-2 transition-all duration-300 ease-in-out whitespace-nowrap">
-            思い出を語る
-        </span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-    </a>
-</main>
-
-<footer class="flex-none bg-slate-800 text-white p-4 z-20">
-    <div class="max-w-md mx-auto flex items-center justify-between">
-        <div class="text-xs">
-            <p class="font-bold opacity-80 uppercase tracking-tighter">Current Archive</p>
-            <p id="archiveLabel" class="text-slate-300"></p>
-        </div>
-    </div>
-</footer>
-
-<script>
-/**
- * 1. 設定の一元管理 (Constants)
- */
-const MAP_CONFIG = {
-    street: {
-        // 東京駅を中心に表示するための座標パラメータを追加しました
-        url: "https://umap.openstreetmap.fr/ja/map/mapmemo_alpha_1336908?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=null&tilelayersControl=true&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false#16/35.6812/139.7671",
-        label: "商店街の記憶（1950s - 2020s）"
-    },
-    mall: {
-        url: "https://umap.openstreetmap.fr/ja/map/mapmemo_mall_1337404?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=true&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=true",
-        label: "ショッピングモールの記憶（1970s - 現在）"
-    }
-};
-
-const STYLES = {
-    active: ["bg-slate-800", "text-white", "border-slate-800"],
-    inactive: ["bg-white", "text-slate-600", "border-gray-200", "hover:bg-gray-50"]
-};
-
-/**
- * 2. 分離と機能の実行 (Logic)
- */
-const elements = {
-    iframe: document.getElementById("mapFrame"),
-    label: document.getElementById("archiveLabel"),
-    buttons: document.querySelectorAll(".map-btn")
-};
-
-function updateMapUI(type) {
-    const config = MAP_CONFIG[type];
-    if (!config) return;
-
-    // iframeとラベルの更新
-    elements.iframe.src = config.url;
-    elements.label.textContent = config.label;
-
-    // ボタンの状態更新
-    elements.buttons.forEach(btn => {
-        const isActive = btn.dataset.type === type;
-        if (isActive) {
-            btn.classList.add(...STYLES.active);
-            btn.classList.remove(...STYLES.inactive);
-        } else {
-            btn.classList.add(...STYLES.inactive);
-            btn.classList.remove(...STYLES.active);
-        }
-    });
-}
-
-// 初期化とイベントリスナーの登録
-document.addEventListener("DOMContentLoaded", () => {
-    // ボタンクリック時の挙動
-    elements.buttons.forEach(btn => {
-        btn.addEventListener("click", () => updateMapUI(btn.dataset.type));
-    });
-
-    // 初期表示設定 (デフォルト: street)
-    updateMapUI("street");
-});
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
 
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // 一元管理されるステート
+    const APP_STATE = {
+        lat: null, lng: null, zoom: 15,
+        azim: 0, polar: Math.PI/2, fov: 75,
+        base64: null, fileName: ""
+    };
+
+    // --- 地図セクション ---
+    const map = L.map('map-area').setView([35.6812, 139.7671], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let marker;
+    map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        if (marker) marker.setLatLng(e.latlng);
+        else marker = L.marker(e.latlng).addTo(map);
+        APP_STATE.lat = lat; APP_STATE.lng = lng; APP_STATE.zoom = map.getZoom();
+        document.getElementById('disp-pos').textContent = `LAT: ${lat.toFixed(5)}\nLNG: ${lng.toFixed(5)}`;
+        checkReady();
+    });
+
+    // --- パノラマセクション ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    camera.position.set(0, 0, 0.1);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const panoEl = document.getElementById('pano-area');
+    renderer.setSize(panoEl.clientWidth, panoEl.clientHeight);
+    panoEl.appendChild(renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    document.getElementById('inp-img').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        APP_STATE.fileName = file.name;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            APP_STATE.base64 = ev.target.result;
+            new THREE.TextureLoader().load(APP_STATE.base64, (t) => {
+                t.mapping = THREE.EquirectangularReflectionMapping;
+                t.colorSpace = THREE.SRGBColorSpace;
+                scene.background = t;
+                document.getElementById('status-msg').textContent = "画像読み込み完了。角度を調整してください。";
+                checkReady();
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function checkReady() {
+        document.getElementById('btn-export').disabled = !(APP_STATE.lat && APP_STATE.base64);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+        APP_STATE.azim = controls.getAzimuthalAngle();
+        APP_STATE.polar = controls.getPolarAngle();
+        APP_STATE.fov = camera.fov;
+    }
+    animate();
+
+    // --- 書き出しセクション ---
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const title = document.getElementById('inp-title').value || "Panorama Tour";
+        
+        // 最終成果物となるHTMLコードの生成
+        const finalHtml = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        #map { width: 100vw; height: 100vh; }
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; }
+        #close { position: absolute; top: 20px; right: 20px; padding: 12px 24px; background: #fff; border: none; cursor: pointer; z-index: 10001; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        #v { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="overlay">
+        <button id="close" onclick="closePano()">地図に戻る</button>
+        <div id="v"></div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+    <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+    <\/script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // データの埋め込み
+        const D = {
+            lat: ${APP_STATE.lat}, lng: ${APP_STATE.lng}, zoom: ${APP_STATE.zoom},
+            azim: ${APP_STATE.azim}, polar: ${APP_STATE.polar}, fov: ${APP_STATE.fov},
+            title: ${JSON.stringify(title)},
+            img: ${JSON.stringify(APP_STATE.base64)}
+        };
+
+        // 地図初期化
+        const m = L.map('map').setView([D.lat, D.lng], D.zoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+        L.marker([D.lat, D.lng]).addTo(m).bindPopup("<b>"+D.title+"</b><br><br><button onclick='window.openPano()'>パノラマを見る</button>").openPopup();
+
+        // パノラマ初期化
+        let scene, camera, renderer, controls;
+        function initPano() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(D.fov, window.innerWidth/window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('v').appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            
+            const dist = 0.1;
+            camera.position.set(dist*Math.sin(D.azim)*Math.sin(D.polar), dist*Math.cos(D.polar), dist*Math.cos(D.azim)*Math.sin(D.polar));
+            
+            new THREE.TextureLoader().load(D.img, (t) => {
+                t.mapping = THREE.EquirectangularReflectionMapping;
+                t.colorSpace = THREE.SRGBColorSpace;
+                scene.background = t;
+            });
+            function anim() { requestAnimationFrame(anim); controls.update(); renderer.render(scene, camera); }
+            anim();
+        }
+
+        window.openPano = () => {
+            document.getElementById('overlay').style.display = 'block';
+            if(!scene) initPano();
+        };
+        window.closePano = () => { document.getElementById('overlay').style.display = 'none'; };
+        window.addEventListener('resize', () => { 
+            if(camera) {
+                camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    <\/script>
+</body>
+</html>`;
+
+        const blob = new Blob([finalHtml], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "PanoMap_Final.html";
+        a.click();
+    });
+</script>
 </body>
 </html>
