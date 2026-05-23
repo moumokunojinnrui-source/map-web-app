@@ -1,0 +1,271 @@
+/* ==========================================
+   【設定の一元管理 (CSS VARIABLES)】
+   ========================================== */
+:root {
+  --bg-panel: rgba(0, 0, 0, 0.85);
+  --bg-indicator: rgba(0, 0, 0, 0.8);
+  --border-light: rgba(255, 255, 255, 0.3);
+  --text-main: #ffffff;
+  --text-muted: #cccccc;
+  --text-dark: #000000;
+  
+  --accent-blue: #0055ff;
+  --accent-cyan: #00ddff;
+  --accent-danger: #ff3333;
+
+  /* ★見やすさを重視し、文字サイズを20px基準に超大型化 */
+  --font-size-label: 22px;  /* 地図上の文字をさらに極太に */
+  --font-size-title: 20px;  /* 看板ロゴのサイズ */
+  --font-size-ui: 18px;     /* ボタンやインジケーターの文字 */
+}
+
+/* ==========================================
+   ベースリセット
+   ========================================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  background-color: var(--text-dark);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+/* ==========================================
+   右上：年代・地図切り替えパネル
+   ========================================== */
+#controlPanel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  left: 16px; /* 横並びボタンを広く配置するため、画面上部にワイドに展開 */
+  z-index: 1000;
+  background: var(--bg-panel);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-light);
+  padding: 14px;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+/* 画面幅が広すぎるPCなどのために、最大幅を制限して右上に寄せる */
+@media (min-width: 576px) {
+  #controlPanel {
+    left: auto;
+    width: 480px; /* ボタンが横並びで綺麗に収まる横幅 */
+  }
+}
+
+#mapTitle {
+  color: var(--text-main);
+  font-size: var(--font-size-title);
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 8px;
+  line-height: 1.3;
+}
+
+/* ★縦並びから「横並び（均等配置）」へリファクタリング */
+#uiPanel {
+  display: flex;
+  flex-direction: row; /* 横並び */
+  gap: 8px;
+  width: 100%;
+}
+
+.year-button {
+  flex: 1; /* 横幅を均等に引き伸ばす */
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  padding: 12px 6px; /* 押しやすい大きなボタン */
+  font-size: var(--font-size-ui);
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center; /* 中央揃え */
+  white-space: nowrap;
+}
+
+.year-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+}
+
+.year-button.active {
+  background: var(--accent-blue);
+  color: var(--text-main);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 85, 255, 0.6);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* ==========================================
+   左下：ズームインジケーター（大型化）
+   ========================================== */
+#metaIndicator {
+  position: absolute;
+  bottom: 24px;
+  left: 12px;
+  z-index: 1000;
+  background: var(--bg-indicator);
+  backdrop-filter: blur(4px);
+  border-left: 5px solid var(--accent-blue);
+  padding: 8px 16px;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+
+#zoomIndicator {
+  color: var(--text-main);
+  font-family: monospace;
+  font-size: var(--font-size-ui);
+  font-weight: bold;
+}
+
+/* ==========================================
+   Leaflet版 独自スポットの極太テロップ（文字サイズ超拡大）
+   ========================================== */
+.custom-label-container {
+  background: none !important;
+  border: none !important;
+}
+
+.leaflet-custom-label {
+  color: var(--text-main);
+  font-weight: 900;
+  font-size: var(--font-size-label); /* 22pxで圧倒的な視認性 */
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 
+    -3px -3px 0 var(--text-dark),  3px -3px 0 var(--text-dark),
+    -3px  3px 0 var(--text-dark),  3px  3px 0 var(--text-dark),
+    -3px  0px 0 var(--text-dark),  3px  0px 0 var(--text-dark),
+     0px -3px 0 var(--text-dark),  0px  3px 0 var(--text-dark),
+     0 3px 6px rgba(0,0,0,0.9);
+}
+
+/* ==========================================
+   右クリック時のコンセプトポップアップ（大型化）
+   ========================================== */
+.leaflet-popup-content-wrapper {
+  background: rgba(0, 0, 0, 0.95) !important;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6) !important;
+  border-radius: 8px !important;
+}
+.leaflet-popup-tip {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+.concept-popup-container {
+  font-family: sans-serif;
+  color: var(--text-main);
+  padding: 6px;
+  min-width: 260px;
+  max-width: 320px;
+  text-align: center;
+}
+
+.concept-title {
+  font-size: var(--font-size-title);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--accent-cyan);
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 6px;
+}
+
+.concept-text {
+  font-size: var(--font-size-ui); /* コンセプトの文章も読みやすく大きく */
+  line-height: 1.6;
+  color: var(--text-main);
+  margin: 12px 0;
+  text-align: left;
+}
+
+.ad-space {
+  margin: 14px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.popup-share-button {
+  width: 100%;
+  background: var(--accent-blue);
+  color: var(--text-main);
+  border: 1px solid var(--accent-cyan);
+  padding: 12px;
+  font-size: var(--font-size-ui); /* ボタンも特大化 */
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 53, 255, 0.3);
+}
+
+.popup-share-button:hover {
+  background: #0044ee;
+  box-shadow: 0 4px 12px rgba(0, 85, 255, 0.5);
+}
+
+/* ==========================================
+   将来用：パノラマ表示用のモーダル窓
+   ========================================== */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 2000; 
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.85); 
+}
+
+.modal-content {
+  position: relative;
+  margin: 5vh auto;
+  width: 90%;
+  height: 80vh;
+  background: #111;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+#panoViewer {
+  width: 100%;
+  height: 100%;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  color: var(--text-main);
+  font-size: 40px;
+  font-weight: bold;
+  z-index: 2001;
+  cursor: pointer;
+}

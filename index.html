@@ -1,214 +1,43 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geo Memories - 時空タイムスリップマップ</title>
+  
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-HYMKDJDV6R"></script>
-<script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-HYMKDJDV6R');
-</script>
+  <script src="js/leaflet.layergroup.collision.js"></script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
-<title>MapMemo - 歴史のアーカイブ</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-html,body{
-height:100%;
-margin:0;
-padding:0;
-overflow:hidden;
-font-family:sans-serif;
-}
-
-.map-wrapper{
-flex-grow:1;
-position:relative;
-width:100%;
-}
-
-iframe{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-height:100%;
-border:0;
-}
-</style>
-
+  <link rel="stylesheet" href="style.css">
 </head>
+<body>
 
-<body class="bg-gray-50 h-full flex flex-col">
+  <div id="map"></div>
 
-<header class="flex-none bg-white shadow-sm p-4 flex justify-between items-center z-20">
+  <div id="controlPanel">
+    <div id="mapTitle">読み込み中...</div>
+    <div id="uiPanel"></div>
+  </div>
 
-<div>
-<h1 class="text-xl font-bold text-slate-800 leading-none">
-MapMemo
-</h1>
-<p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">
-Digital History Archive
-</p>
-</div>
+  <div id="metaIndicator">
+    <div id="zoomIndicator">Zoom: --</div>
+  </div>
 
-<div class="flex gap-2">
+  <div id="panoModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="document.getElementById('panoModal').style.display='none'">&times;</span>
+      <div id="panoViewer"></div>
+    </div>
+  </div>
 
-<button data-type="street"
-class="map-btn px-4 py-1.5 text-xs rounded-full border shadow-sm">
-店舗名
-</button>
-
-<button data-type="mall"
-class="map-btn px-4 py-1.5 text-xs rounded-full border shadow-sm">
-モール
-</button>
-
-</div>
-
-</header>
-
-<main class="map-wrapper">
-
-<iframe
-id="mapFrame"
-loading="lazy"
-allowfullscreen
-allow="geolocation">
-</iframe>
-
-<a href="https://note.com"
-target="_blank"
-class="absolute bottom-6 right-6 z-30 bg-rose-500 text-white p-4 rounded-full shadow-lg hover:bg-rose-600 transition">
-
-思い出を語る
-
-</a>
-
-</main>
-
-<footer class="flex-none bg-slate-800 text-white p-4 z-20">
-
-<div class="max-w-md mx-auto flex items-center justify-between">
-
-<div class="text-xs">
-
-<p class="font-bold opacity-80 uppercase tracking-tighter">
-Current Archive
-</p>
-
-<p id="archiveLabel"
-class="text-slate-300">
-</p>
-
-</div>
-
-</div>
-
-</footer>
-
-<script>
-
-/* =========================
-CONFIG
-========================= */
-
-const MAP_CONFIG = {
-
-street:{
-url:"https://umap.openstreetmap.fr/ja/map/mapmemo_alpha_1336908?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=false&searchControl=null&tilelayersControl=true&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=false#16/35.6812/139.7671",
-label:"商店街の記憶（1950s - 2020s）"
-},
-
-mall:{
-url:"https://umap.openstreetmap.fr/ja/map/mapmemo_mall_1337404?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=true&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=true",
-label:"ショッピングモールの記憶（1970s - 現在）"
-}
-
-}
-
-/* =========================
-DOM
-========================= */
-
-const iframe=document.getElementById("mapFrame")
-const label=document.getElementById("archiveLabel")
-const buttons=document.querySelectorAll(".map-btn")
-
-/* =========================
-STATE
-========================= */
-
-let currentType=null
-
-/* =========================
-MAP UPDATE
-========================= */
-
-function updateMap(type){
-
-if(currentType===type)return
-
-currentType=type
-
-const config=MAP_CONFIG[type]
-
-iframe.src=config.url
-label.textContent=config.label
-
-buttons.forEach(btn=>{
-
-if(btn.dataset.type===type){
-
-btn.classList.add("bg-slate-800","text-white","border-slate-800")
-btn.classList.remove("bg-white","text-slate-600")
-
-}else{
-
-btn.classList.remove("bg-slate-800","text-white","border-slate-800")
-btn.classList.add("bg-white","text-slate-600")
-
-}
-
-})
-
-}
-
-/* =========================
-INIT
-========================= */
-
-buttons.forEach(btn=>{
-
-btn.addEventListener("click",()=>{
-
-updateMap(btn.dataset.type)
-
-})
-
-})
-
-updateMap("street")
-
-/* =========================
-PRELOAD
-========================= */
-
-Object.values(MAP_CONFIG).forEach(cfg=>{
-
-const link=document.createElement("link")
-link.rel="preconnect"
-link.href="https://umap.openstreetmap.fr"
-document.head.appendChild(link)
-
-})
-
-</script>
-
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
