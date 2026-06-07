@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Geo Memories - 時空タイムスリップマップ</title>
   
   <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -20,12 +20,15 @@
 </head>
 <body>
 
+  <header id="appHeader">
+    <div id="mapTitle">Geo Memories</div>
+  </header>
+
   <div id="map"></div>
 
-  <div id="controlPanel">
-    <div id="mapTitle">読み込み中...</div>
+  <footer id="appFooter">
     <div id="uiPanel"></div>
-  </div>
+  </footer>
 
   <div id="metaIndicator">
     <div id="zoomIndicator">Zoom: --</div>
